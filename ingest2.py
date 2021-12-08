@@ -20,7 +20,7 @@ FLUSH_MESSAGE_COUNT = 50
 # database config
 DATABASE = 'adsb'
 COLLECTION = 'modesmixer'
-URI = 'mongodb+srv://adsb:Pas4N3w@cluster0-ozmf8.azure.mongodb.net/test?retryWrites=true&w=majority'
+URI = ''
 ############ END CONFIG #############
 
 def flush_buffer():
