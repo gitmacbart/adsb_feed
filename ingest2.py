@@ -18,9 +18,10 @@ FLUSH_INTERVAL = 10
 # flush after reading this number of useful messages (not lines) from a file
 FLUSH_MESSAGE_COUNT = 50
 # database config
+# database config
 DATABASE = 'adsb'
-COLLECTION = 'modesmixer'
-URI = ''
+COLLECTION = 'readings'
+URI = 'mongodb://localhost:27017/'
 ############ END CONFIG #############
 
 def flush_buffer():
@@ -42,6 +43,19 @@ def flush_buffer():
 
 def fullfllush_buffer():
         print("++flushing++")
+        #bulk = collection.initialize_unordered_bulk_op()
+        #for key in buffer:
+        #       insert_doc = {"icao": buffer[key]['icao'], "t": buffer[key]['ts']}
+        #       if 'callsign' in buffer[key]:
+        #        insert_doc['callsign'] = buffer[key]['callsign']
+        #        if 'events' in buffer[key] and len(buffer[key]['events']) > 0:
+        #                for event in buffer[key]['events']:
+        #                        baseline = insert_doc.copy()
+        #                        baseline.update(event) # overwrite t
+        #                        bulk.insert(baseline)
+        #        else:
+        #                bulk.insert(insert_doc)
+        #result = bulk.execute()
         buffer.clear()
 
 def catch_sigint(signal, frame):
@@ -74,6 +88,8 @@ with sys.stdin if from_network or sys.argv[1] is '-' else open(sys.argv[1], 'rb'
                     alt = float(altitude)
                 if speed:
                     vitesse = float(speed)
+                if (onground == 0):
+                   print("row: " + row)
                 if (transmission_type == 2):
                    print("row: " + row)
                 if (altitude) and (speed) and (alt > 0):
@@ -85,17 +101,21 @@ with sys.stdin if from_network or sys.argv[1] is '-' else open(sys.argv[1], 'rb'
                 #   print("")
                 #if callsign:
                    #print("--> icao=" + icao_hex + " callsign=" + callsign + " onground= " + onground)
-                #if ("MSG" != msg_type) or (transmission_type not in ["2"]) and (vitesse < 100) and (alt >0) and (alt < 2000):
-                   #print("//////////+++++")
-                   #print("-->> alt= " + altitude + " icao= " + icao_hex + " aircraftid= " + aircraft_id + " callsign= " + callsign + " speed= " + speed)
-                
-                continue
+                if ("MSG" != msg_type) or (transmission_type in ["2"] and (onground == "-1") and (speed) and (vitesse > 50)):
+                   print("//////////        Landing       ///////////")
+                   print("type -->" + transmission_type + "-->> alt= " + altitude + " icao= " + icao_hex + " speed= " + speed + " onground= " + onground)
+                   print("row: " + str(row))
+                if ("MSG" != msg_type) or (transmission_type in ["2"] and (onground == "0") and (vitesse > 90) and (alt <1900)):
+                   print("//////////        Take-off       ///////////")
+                   print("type -->" + transmission_type + "-->> alt= " + altitude + " icao= " + icao_hex + " speed= " + speed + " onground= " + onground)
+                   print("row: " + str(row))
+                if ("MSG" != msg_type) or (transmission_type in ["2"]):
+                        continue
                 
                 local_dt_ms = my_tz.localize(datetime.strptime(date_gen + " " + time_gen, "%Y/%m/%d %H:%M:%S.%f"))
                 utc_dt_second = local_dt_ms.replace(microsecond = 0).astimezone(utc_tz) # UTC to the nearest second
                 utc_str_hour = local_dt_ms.replace(microsecond = 0, second = 0, minute = 0).astimezone(utc_tz).strftime("%Y%m%d%H") # UTC to the nearest hour
-                id = utc_str_hour + ":" + icao_hex
-                print("--")
+                _id = utc_str_hour + ":" + icao_hex
                 # initialize the dictionary
                 try:
                         buffer[_id]['icao'] = icao_hex
@@ -108,9 +128,10 @@ with sys.stdin if from_network or sys.argv[1] is '-' else open(sys.argv[1], 'rb'
                         buffer[_id]['ts'] = utc_dt_second
 
                 # process each message type
-                print("-----------------------------------------------------------------------------------")
-                print("Nessage SWITCH vitesse: " + speed + "icao: " + icao_hex + " time: "+ time_logged)
-                print("-----------------------------------------------------------------------------------")
+                if (transmission_type in ["2"] and (onground == "-1") and (speed) and (vitesse > 50)):
+                        print("-----------------------------------------------------------------------------------")
+                        print("Landing SWITCH vitesse: " + speed + "icao: " + icao_hex + " time: "+ time_logged)
+                        print("-----------------------------------------------------------------------------------")
 
                 if from_network:
                         now = time.time()
@@ -124,4 +145,4 @@ with sys.stdin if from_network or sys.argv[1] is '-' else open(sys.argv[1], 'rb'
                                 messages_read = 0
 
 # finally flush the buffer if we were reading from a file
-fullflush_buffer()
+fullfllush_buffer()
