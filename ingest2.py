@@ -105,9 +105,9 @@ with sys.stdin if from_network or sys.argv[1] is '-' else open(sys.argv[1], 'rb'
                    print("//////////        Landing       ///////////")
                    print("type -->" + transmission_type + "-->> alt= " + altitude + " icao= " + icao_hex + " speed= " + speed + " onground= " + onground)
                    print("row: " + str(row))
-                if ("MSG" != msg_type) or (transmission_type in ["2"] and (onground == "0") and (vitesse > 90) and (alt <1900)):
+                if ("MSG" != msg_type) or (transmission_type not in [""] and (callsign) and (alt <1900)):
                    print("//////////        Take-off       ///////////")
-                   print("type -->" + transmission_type + "-->> alt= " + altitude + " icao= " + icao_hex + " speed= " + speed + " onground= " + onground)
+                   print("type -->" + transmission_type + "-->> alt= " + altitude + " icao= " + icao_hex + " callsign= " + callsign + " onground= " + onground)
                    print("row: " + str(row))
                 if ("MSG" != msg_type) or (transmission_type in ["2"]):
                         continue
@@ -128,7 +128,7 @@ with sys.stdin if from_network or sys.argv[1] is '-' else open(sys.argv[1], 'rb'
                         buffer[_id]['ts'] = utc_dt_second
 
                 # process each message type
-                if (transmission_type in ["2"] and (onground == "-1") and (speed) and (vitesse > 50)):
+                if (transmission_type in ["2","3","4"] and (onground == "-1") and (speed) and (vitesse > 50)):
                         print("-----------------------------------------------------------------------------------")
                         print("Landing SWITCH vitesse: " + speed + "icao: " + icao_hex + " time: "+ time_logged)
                         print("-----------------------------------------------------------------------------------")
