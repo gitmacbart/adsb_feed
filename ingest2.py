@@ -2,12 +2,17 @@
 # read dump1090 data from a stream and store it in MongoDB.
 # assumption: message timestamps are monotonically increasing.
 
+
+# use below nc 172.22.1.11 30003 | python detect.py
+
 import csv
 import sys
 import time
 from datetime import datetime
 from pytz import timezone
 import signal
+import paho.mqtt.client as mqtt
+
 #from pymongo import MongoClient
 
 ############ CONFIG HERE ############
@@ -23,6 +28,16 @@ DATABASE = 'adsb'
 COLLECTION = 'readings'
 URI = 'mongodb://localhost:27017/'
 ############ END CONFIG #############
+
+def on_connect(client, userdata, flags, rc):
+    print("Connected with result code "+str(rc))
+    # Subscribing in on_connect() means that if we lose the connection and
+    # reconnect then subscriptions will be renewed.
+    client.subscribe("$SYS/AB")
+
+def on_publish(client,userdata,result):             #create function for callback
+    print("data published \n")
+    pass
 
 def flush_buffer():
         bulk = collection.initialize_unordered_bulk_op()
@@ -105,10 +120,19 @@ with sys.stdin if from_network or sys.argv[1] is '-' else open(sys.argv[1], 'rb'
                    print("//////////        Landing       ///////////")
                    print("type -->" + transmission_type + "-->> alt= " + altitude + " icao= " + icao_hex + " speed= " + speed + " onground= " + onground)
                    print("row: " + str(row))
-                if ("MSG" != msg_type) or (transmission_type not in [""] and (callsign) and (alt <1900)):
+                   client = mqtt.Client()
+                   client.on_connect = on_connect
+                   client.connect("mqtt.iotwithus.com", 1883, 60)
+                   ret=client.publish("house/AB","LANDING ---- ICAO: "+icao_hex +" ----vitesse : " + speed)
+
+                if ("MSG" != msg_type) or (transmission_type not in [""] and (callsign) and (alt <1900) and (speed)):
                    print("//////////        Take-off       ///////////")
                    print("type -->" + transmission_type + "-->> alt= " + altitude + " icao= " + icao_hex + " callsign= " + callsign + " onground= " + onground)
                    print("row: " + str(row))
+                   client = mqtt.Client()
+                   client.on_connect = on_connect
+                   client.connect("mqtt.iotwithus.com", 1883, 60)
+                   ret=client.publish("house/AB"," CallSign ---- "+ callsign + " "+icao_hex + "       au sol   vitess: " + speed)
                 if ("MSG" != msg_type) or (transmission_type in ["2"]):
                         continue
                 
@@ -132,6 +156,7 @@ with sys.stdin if from_network or sys.argv[1] is '-' else open(sys.argv[1], 'rb'
                         print("-----------------------------------------------------------------------------------")
                         print("Landing SWITCH vitesse: " + speed + "icao: " + icao_hex + " time: "+ time_logged)
                         print("-----------------------------------------------------------------------------------")
+
 
                 if from_network:
                         now = time.time()
