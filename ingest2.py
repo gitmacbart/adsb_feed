@@ -124,8 +124,15 @@ with sys.stdin if from_network or sys.argv[1] is '-' else open(sys.argv[1], 'rb'
                    client.on_connect = on_connect
                    client.connect("mqtt.iotwithus.com", 1883, 60)
                    ret=client.publish("house/AB","LANDING ---- ICAO: "+icao_hex +" ----vitesse : " + speed)
-
-                if ("MSG" != msg_type) or (transmission_type not in [""] and (callsign) and (alt <1900) and (speed)):
+                if ("MSG" != msg_type) or (transmission_type not in [""] and (onground == "0") and (speed) and (vitesse < 100) and (vitesse > 80) ):
+                   print("//////////        Approach     ///////////")
+                   print("type -->" + transmission_type + "-->> alt= " + altitude + " icao= " + icao_hex + " speed= " + speed + " onground= " + onground)
+                   print("row: " + str(row))
+                   client = mqtt.Client()
+                   client.on_connect = on_connect
+                   client.connect("mqtt.iotwithus.com", 1883, 60)
+                   ret=client.publish("house/AB","Approching ---- ICAO: "+icao_hex +" ----vitesse : " + speed)
+                if ("MSG" != msg_type) or (transmission_type not in ["2"] and (alt <1900) and (speed) and (vitesse < 50) and (onground == "-1")):
                    print("//////////        Take-off       ///////////")
                    print("type -->" + transmission_type + "-->> alt= " + altitude + " icao= " + icao_hex + " callsign= " + callsign + " onground= " + onground)
                    print("row: " + str(row))
